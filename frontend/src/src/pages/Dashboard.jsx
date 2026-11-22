@@ -1,43 +1,37 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiRequest } from '../api/api.js';
-import { Field, StatusPill } from '../components/ui.jsx';
+import { bookingsApi } from '../api/services.js';
+import { ErrorState, Field, Spinner, StatusPill } from '../components/ui.jsx';
+import { useApi } from '../hooks/useApi.js';
+import { formatDate } from '../utils/format.js';
 import { useAuth } from '../context/AuthContext.jsx';
-
-const formatDate = (value) => value ? new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not set';
 
 export default function Dashboard() {
   const { user, isCoordinator, setMessage } = useAuth();
-  const [bookings, setBookings] = useState([]);
+  const { data, loading, error, reload, mutate } = useApi(bookingsApi.list);
+  const bookings = useMemo(() => (Array.isArray(data) ? data : []), [data]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const loadBookings = useCallback(async () => {
-    try { const data = await apiRequest('/api/bookings'); setBookings(Array.isArray(data) ? data : []); }
-    catch (error) { setMessage('error', error.message); }
-  }, [setMessage]);
-
-  useEffect(() => { loadBookings(); }, [loadBookings]);
-
   async function updateBooking(event) {
     event.preventDefault(); if (!editing) return; setBusy(true);
     try {
-      const data = await apiRequest(`/api/bookings/${editing._id}`, { method: 'PUT', body: JSON.stringify(editing) });
-      setBookings((old) => old.map((b) => b._id === editing._id ? (data.booking || editing) : b));
-      setEditing(null); setMessage('success', data.message || 'Booking updated.');
-    } catch (error) { setMessage('error', error.message); }
+      const res = await bookingsApi.update(editing._id, editing);
+      mutate((old) => (old || []).map((b) => b._id === editing._id ? (res.booking || editing) : b));
+      setEditing(null); setMessage('success', res.message || 'Booking updated.');
+    } catch (err) { setMessage('error', err.message); }
     finally { setBusy(false); }
   }
 
   async function deleteBooking(id) {
     if (!window.confirm('Delete this booking? This cannot be undone.')) return;
     try {
-      const data = await apiRequest(`/api/bookings/${id}`, { method: 'DELETE' });
-      setBookings((old) => old.filter((b) => b._id !== id));
-      setMessage('success', data.message || 'Booking deleted.');
-    } catch (error) { setMessage('error', error.message); }
+      const res = await bookingsApi.remove(id);
+      mutate((old) => (old || []).filter((b) => b._id !== id));
+      setMessage('success', res.message || 'Booking deleted.');
+    } catch (err) { setMessage('error', err.message); }
   }
 
   const visible = useMemo(() => bookings.filter((b) =>
@@ -75,7 +69,7 @@ export default function Dashboard() {
       <section className="content-card">
         <div className="content-card-head">
           <div><h2>{isCoordinator ? 'All booking requests' : 'Your bookings'}</h2><p>{isCoordinator ? 'Manage client requests and update statuses.' : 'Track the progress of your event requests.'}</p></div>
-          <button className="btn btn-outline btn-sm" onClick={loadBookings}>↻ Refresh</button>
+          <button className="btn btn-outline btn-sm" onClick={reload} disabled={loading}>↻ Refresh</button>
         </div>
         <div className="table-tools">
           <label className="search-box"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={isCoordinator ? 'Search client, event, venue…' : 'Search your bookings…'} /></label>
@@ -84,7 +78,7 @@ export default function Dashboard() {
           </select>
         </div>
 
-        {visible.length === 0 ? (
+        {loading ? <Spinner label="Loading bookings…" /> : error ? <ErrorState message={error} onRetry={reload} /> : visible.length === 0 ? (
           <div className="empty-state">
             <span>✳</span>
             <h3>{bookings.length ? 'No matching bookings' : 'Your plans start here'}</h3>

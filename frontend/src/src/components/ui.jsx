@@ -37,3 +37,21 @@ export function PageHeader({ eyebrow, title, children }) {
     </header>
   );
 }
+
+export function Spinner({ label = 'Loading…' }) {
+  return <div className="state-box" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><span>{label}</span></div>;
+}
+
+export function ErrorState({ message, onRetry }) {
+  return (
+    <div className="state-box state-error" role="alert">
+      <strong>Something went wrong</strong>
+      <span>{message}</span>
+      {onRetry && <button className="btn btn-outline btn-sm" onClick={onRetry}>Try again</button>}
+    </div>
+  );
+}
+
+export function EmptyState({ title, children }) {
+  return <div className="state-box"><strong>{title}</strong>{children && <span>{children}</span>}</div>;
+}

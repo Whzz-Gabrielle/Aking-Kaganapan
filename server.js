@@ -33,6 +33,8 @@ app.get('/api/test', (req, res) => {
 // API routes
 app.use('/api/bookings', require('./routes/bookingRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/packages', require('./routes/packageRoutes'));
+app.use('/api/venues', require('./routes/venueRoutes'));
 
 // Start the API server first
 app.listen(PORT, () => {
