@@ -26,7 +26,7 @@ frontend/src/             React app (pages, components, api, context, hooks, uti
    npm install
    cd frontend/src && npm install
    ```
-2. **Create `.env`** in the project root (copy `.env.example`) and fill in:
+2. **Create `.env`** in the project root and fill in:
    `MONGO_URI`, `JWT_SECRET`, `COORDINATOR_NAME/EMAIL/PASSWORD`, and the `CLOUDINARY_*` keys.
    Optional: `PORT` (default 3000) and `CLIENT_ORIGIN` (default `http://localhost:5173`).
 3. **Create the coordinator account** (coordinators cannot self-register):
@@ -87,8 +87,5 @@ Every error returns JSON shaped like `{ "message": "...", "errors": [{ "field", 
 - 400 validation or bad ID · 401 not signed in / expired token · 403 wrong role · 404 not found
 - 409 conflict (duplicate, or deleting something still in use) · 503 database unavailable
 - Server errors (500) are logged on the server and show a generic message to the user.
-
-The frontend shows these inline in forms, keeps the last loaded data if a refresh fails, and has an error
-boundary, request timeout and offline banner.
 
 
